@@ -1,0 +1,34 @@
+env:
+  contexts:
+    - name: captakip
+      urls: ["http://127.0.0.1:8000/"]
+      includePaths: ["http://127.0.0.1:8000.*"]
+      excludePaths:
+        - "http://127.0.0.1:8000/hesap/cikis/.*"
+        - "http://127.0.0.1:8000/hesap/sifre-degistir/.*"
+  parameters:
+    failOnError: false
+    failOnWarning: false
+    progressToStdout: true
+jobs:
+  - type: spider
+    parameters:
+      context: captakip
+      url: "http://127.0.0.1:8000/"
+      maxDuration: 4
+      maxDepth: 8
+  - type: passiveScan-wait
+    parameters:
+      maxDuration: 5
+  - type: report
+    parameters:
+      template: traditional-html
+      reportDir: .
+      reportFile: zap_anonim.html
+      reportTitle: "ÇAP/YDP Takip - ZAP taraması (anonim)"
+  - type: report
+    parameters:
+      template: traditional-json
+      reportDir: .
+      reportFile: zap_anonim.json
+      reportTitle: "ÇAP/YDP Takip - ZAP taraması (anonim)"

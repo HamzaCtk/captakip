@@ -1,0 +1,50 @@
+env:
+  contexts:
+    - name: captakip
+      urls: ["http://127.0.0.1:8000/"]
+      includePaths: ["http://127.0.0.1:8000.*"]
+      excludePaths:
+        - "http://127.0.0.1:8000/hesap/cikis/.*"
+        - "http://127.0.0.1:8000/hesap/sifre-degistir/.*"
+  parameters:
+    failOnError: false
+    failOnWarning: false
+    progressToStdout: true
+jobs:
+  - type: replacer
+    rules:
+      - description: "oturum cerezi"
+        matchType: req_header
+        matchString: "Cookie"
+        matchRegex: false
+        replacementString: "csrftoken=BURAYA; sessionid=BURAYA"
+  - type: spider
+    parameters:
+      context: captakip
+      url: "http://127.0.0.1:8000/"
+      maxDuration: 4
+      maxDepth: 8
+  - type: passiveScan-wait
+    parameters:
+      maxDuration: 5
+  - type: activeScan
+    parameters:
+      context: captakip
+      maxScanDurationInMins: 25
+      maxRuleDurationInMins: 3
+      threadPerHost: 4
+  - type: passiveScan-wait
+    parameters:
+      maxDuration: 5
+  - type: report
+    parameters:
+      template: traditional-html
+      reportDir: .
+      reportFile: zap_koordinator.html
+      reportTitle: "CAP-YDP Takip - ZAP taramasi (koordinator)"
+  - type: report
+    parameters:
+      template: traditional-json
+      reportDir: .
+      reportFile: zap_koordinator.json
+      reportTitle: "CAP-YDP Takip - ZAP taramasi (koordinator)"
