@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+{% block baslik %}Şifre değiştir{% endblock %}
+{% block icerik %}
+<section class="kart dar">
+  <h1>Şifre değiştir</h1>
+  {% if user.sifre_degistirmeli %}
+    <div class="bildirim warning">Geçici şifreyle giriş yaptınız. Devam etmek için kendi şifrenizi belirleyin.</div>
+  {% endif %}
+  <form method="post">
+    {% csrf_token %}
+    {% include "_form.html" %}
+    <button class="dugme">Kaydet</button>
+  </form>
+</section>
+{% endblock %}

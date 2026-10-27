@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+{% block baslik %}Kural ayarları{% endblock %}
+{% block icerik %}
+<h1>Kural ayarları</h1>
+<p class="soluk">Uyarıları üreten eşikler burada tutulur. Yönerge değiştiğinde kod değişmez; koordinatör yeni bir <strong>kural sürümü</strong> girer. Eski sürümler silinmez, değiştirilemez ve geçmiş değerlendirmeler kendi sürümleriyle kalır.</p>
+
+{% for g in gruplar %}
+<section class="kart ust-bosluk">
+  <div class="baslik-satiri">
+    <h2>{{ g.ad }}</h2>
+    {% if user.koordinator_mu %}<a class="dugme kucuk-dugme" href="{% url 'surum_yeni' g.tur %}">+ Yeni sürüm</a>{% endif %}
+  </div>
+  {% if g.gecerli %}
+    <p><span class="rozet yesil">Yürürlükte</span> <strong>{{ g.gecerli.ad }}</strong></p>
+    <p class="soluk kucuk">Dayanak: {{ g.gecerli.dayanak }} · Başlangıç: {{ g.gecerli.yururluk_baslangic|date:"d.m.Y" }}{% if g.gecerli.yururluk_bitis %} · Bitiş: {{ g.gecerli.yururluk_bitis|date:"d.m.Y" }}{% endif %}</p>
+    <table class="tablo">
+      <thead><tr><th>Kural parametresi</th><th>Değer</th><th>Dayanak</th></tr></thead>
+      <tbody>{% for etiket, deger, dayanak in g.satirlar %}
+        <tr><td>{{ etiket }}</td><td><strong>{{ deger }}</strong></td><td class="kucuk soluk">{{ dayanak }}</td></tr>
+      {% endfor %}</tbody>
+    </table>
+  {% else %}
+    <p class="soluk">Yürürlükte sürüm yok. {% if user.koordinator_mu %}İlk sürümü oluşturmak için <code>python manage.py baslangic_verisi</code> çalıştırın veya yeni sürüm girin.{% endif %}</p>
+  {% endif %}
+
+  {% if g.gecmis %}
+  <details class="arsiv ust-bosluk">
+    <summary><strong>Diğer sürümler</strong> <span class="soluk">({{ g.gecmis|length }})</span></summary>
+    <table class="tablo">
+      <thead><tr><th>Sürüm</th><th>Yürürlük</th><th>Oluşturan</th></tr></thead>
+      <tbody>{% for s in g.gecmis %}
+        <tr><td>{{ s.ad }}<br><small class="soluk">{{ s.dayanak }}</small></td>
+          <td class="tek-satir">{{ s.yururluk_baslangic|date:"d.m.Y" }} – {{ s.yururluk_bitis|date:"d.m.Y"|default:"…" }}</td>
+          <td class="kucuk">{{ s.olusturan.username|default:"ilk kurulum" }} · {{ s.zaman|date:"d.m.Y" }}</td></tr>
+      {% endfor %}</tbody>
+    </table>
+  </details>
+  {% endif %}
+</section>
+{% endfor %}
+{% endblock %}

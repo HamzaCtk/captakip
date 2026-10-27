@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+{% block baslik %}Kurul kararı işle{% endblock %}
+{% block icerik %}
+<p class="ekmek"><a href="{% url 'ogrenci_listesi' %}">Öğrenciler</a> / <a href="{% url 'ogrenci_durum' ogrenci.ogrenci_no %}">{{ ogrenci.ogrenci_no }}</a> / Kurul kararı</p>
+<section class="kart orta">
+  <h1>Kurul kararı işle</h1>
+  <p class="soluk">{{ ogrenci.ad_soyad }} · {{ program.get_tur_display }}</p>
+  <div class="bildirim warning">Karar sistem tarafından verilmez. Burada yalnızca kurulun verdiği karar, karar yazısı dayanak gösterilerek işlenir. Mezuniyet, sertifika, kayıt silme ve ayrılma kararları programı <strong>sonuçlandırır</strong> ve geri alınamaz.</div>
+  {% if not form.fields.dayanak_belge.queryset.exists %}
+  <div class="bildirim error">Bu öğrenci için onaylı bir “Kurul kararı” belgesi yok. Önce <a href="{% url 'belgeler' ogrenci.ogrenci_no %}">Belgeler</a> sekmesinden karar yazısını yükleyin.</div>
+  {% endif %}
+  <form method="post">{% csrf_token %}
+    {% include "_form.html" %}
+    <button class="dugme">Kararı işle</button>
+    <a class="dugme ikincil" href="{% url 'ogrenci_durum' ogrenci.ogrenci_no %}">Vazgeç</a>
+  </form>
+</section>
+{% endblock %}

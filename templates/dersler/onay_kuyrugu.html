@@ -1,0 +1,67 @@
+{% extends "base.html" %}
+{% block baslik %}Onay kuyruğu{% endblock %}
+{% block icerik %}
+<h1>Onay kuyruğu</h1>
+<p class="soluk">Öğrencilerin girdiği ve henüz onaylanmamış kayıtlar. Onaylanan kayıt kilitlenir ve hesaplara girer; reddedilen kayıt gerekçesiyle görünür kalır.
+{% if user.bolum_baskani_mi %}<br>Bölüm başkanı görünümü: kayıtları görebilir, işlem yapamazsınız.{% endif %}</p>
+
+{% with toplam=b.dersler|length|add:b.denemeler|length %}
+{% if not b.dersler and not b.denemeler and not b.notlar and not b.belgeler %}
+  <div class="kart bos-durum"><strong>Onay bekleyen kayıt yok.</strong><p class="soluk">Öğrenciler yeni ders, dönem kaydı veya not girdiğinde burada görünecek.</p></div>
+{% endif %}
+{% endwith %}
+
+{% if b.dersler %}
+<h2 class="bosluk-ust">Ders listesi talepleri <span class="soluk">({{ b.dersler|length }})</span></h2>
+<table class="tablo">
+  <thead><tr><th>Öğrenci</th><th>Ders</th><th>AKTS</th><th>Talep</th><th>Gönderildi</th>{% if user.koordinator_mu %}<th></th>{% endif %}</tr></thead>
+  <tbody>{% for k in b.dersler %}
+    <tr><td><a href="{% url 'ogrenci_karti' k.program_kaydi.ogrenci.ogrenci_no %}">{{ k.program_kaydi.ogrenci.ogrenci_no }}</a> {{ k.program_kaydi.ogrenci.ad_soyad }}</td>
+      <td>{{ k.ders.kod }} {{ k.ders.ad }}</td><td>{{ k.akts }}</td>
+      <td>{% if k.doldurdugu_slot_id %}Seçmeli slotu: {{ k.slot_aciklama|default:"seçmeli" }}{% else %}Listeye ekleme ({{ k.program_kaydi.tur }}){% endif %}</td>
+      <td class="tek-satir">{{ k.olusturma_zamani|date:"d.m.Y H:i" }}</td>
+      {% if user.koordinator_mu %}<td>{% include "dersler/_onay_dugmeleri.html" with tur="ders" kayit=k kayit_ogrenci_no=k.program_kaydi.ogrenci.ogrenci_no %}</td>{% endif %}</tr>
+  {% endfor %}</tbody>
+</table>
+{% endif %}
+
+{% if b.denemeler %}
+<h2 class="bosluk-ust">Dönem ders kayıtları <span class="soluk">({{ b.denemeler|length }})</span></h2>
+<table class="tablo">
+  <thead><tr><th>Öğrenci</th><th>Ders</th><th>Dönem</th><th>Gönderildi</th>{% if user.koordinator_mu %}<th></th>{% endif %}</tr></thead>
+  <tbody>{% for k in b.denemeler %}{% with o=k.ogrenci_dersi.program_kaydi.ogrenci %}
+    <tr><td><a href="{% url 'ogrenci_karti' o.ogrenci_no %}">{{ o.ogrenci_no }}</a> {{ o.ad_soyad }}</td>
+      <td>{{ k.ogrenci_dersi.ders.kod }} {{ k.ogrenci_dersi.ders.ad }}</td><td class="tek-satir">{{ k.donem }}</td>
+      <td class="tek-satir">{{ k.olusturma_zamani|date:"d.m.Y H:i" }}</td>
+      {% if user.koordinator_mu %}<td>{% include "dersler/_onay_dugmeleri.html" with tur="deneme" kayit=k kayit_ogrenci_no=o.ogrenci_no %}</td>{% endif %}</tr>
+  {% endwith %}{% endfor %}</tbody>
+</table>
+{% endif %}
+
+{% if b.notlar %}
+<h2 class="bosluk-ust">Not girişleri <span class="soluk">({{ b.notlar|length }})</span></h2>
+<table class="tablo">
+  <thead><tr><th>Öğrenci</th><th>Ders</th><th>Dönem</th><th>Girilen not</th><th>Gönderildi</th>{% if user.koordinator_mu %}<th></th>{% endif %}</tr></thead>
+  <tbody>{% for k in b.notlar %}{% with o=k.deneme.ogrenci_dersi.program_kaydi.ogrenci %}
+    <tr><td><a href="{% url 'ogrenci_karti' o.ogrenci_no %}">{{ o.ogrenci_no }}</a> {{ o.ad_soyad }}</td>
+      <td>{{ k.deneme.ogrenci_dersi.ders.kod }} {{ k.deneme.ogrenci_dersi.ders.ad }}</td><td class="tek-satir">{{ k.deneme.donem }}</td>
+      <td><strong>{{ k.harf_notu }}</strong></td><td class="tek-satir">{{ k.olusturma_zamani|date:"d.m.Y H:i" }}</td>
+      {% if user.koordinator_mu %}<td>{% include "dersler/_onay_dugmeleri.html" with tur="not" kayit=k kayit_ogrenci_no=o.ogrenci_no etiket="Notu onayla" %}</td>{% endif %}</tr>
+  {% endwith %}{% endfor %}</tbody>
+</table>
+<p class="soluk kucuk">Not onaylamadan önce öğrencinin yüklediği ÇAP/YDP not belgesiyle karşılaştırın (öğrencinin Belgeler sayfasından indirebilirsiniz).</p>
+{% endif %}
+{% if b.belgeler %}
+<h2 class="bosluk-ust">Yüklenen belgeler <span class="soluk">({{ b.belgeler|length }})</span></h2>
+<table class="tablo">
+  <thead><tr><th>Öğrenci</th><th>Belge</th><th>Dönem</th><th>Dosya</th><th>Yüklendi</th>{% if user.koordinator_mu %}<th></th>{% endif %}</tr></thead>
+  <tbody>{% for k in b.belgeler %}
+    <tr><td><a href="{% url 'belgeler' k.ogrenci.ogrenci_no %}">{{ k.ogrenci.ogrenci_no }}</a> {{ k.ogrenci.ad_soyad }}</td>
+      <td>{{ k.get_tur_display }}</td><td class="tek-satir">{{ k.donem|default:"—" }}</td>
+      <td><a href="{% url 'belge_indir' k.ogrenci.ogrenci_no k.pk %}">{{ k.orijinal_ad }}</a></td>
+      <td class="tek-satir">{{ k.olusturma_zamani|date:"d.m.Y H:i" }}</td>
+      {% if user.koordinator_mu %}<td>{% include "dersler/_onay_dugmeleri.html" with tur="belge" kayit=k kayit_ogrenci_no=k.ogrenci.ogrenci_no %}</td>{% endif %}</tr>
+  {% endfor %}</tbody>
+</table>
+{% endif %}
+{% endblock %}

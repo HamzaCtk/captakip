@@ -1,0 +1,25 @@
+{% load takip %}<div class="uyari-satiri seviye-{{ u.seviye|lower }}{% if not u.acik_mi and u.durum != 'GORULDU' %} kapali{% endif %}">
+  <div class="uyari-govde">
+    <span class="rozet {{ u.get_seviye_display|durum_rengi }}">{{ u.get_seviye_display }}</span>
+    {% if u.durum != "ACIK" %}<span class="rozet {{ u.get_durum_display|durum_rengi }}">{{ u.get_durum_display }}</span>{% endif %}
+    <p>{{ u.mesaj }}</p>
+    <small class="soluk">{% if u.dayanak %}Dayanak: {{ u.dayanak }} · {% endif %}{{ u.zaman|date:"d.m.Y H:i" }}{% if u.kapatma_zamani %} · Kapanış: {{ u.kapatma_zamani|date:"d.m.Y H:i" }}{% if u.kapatan %} ({{ u.kapatan.username }}){% endif %}{% endif %}</small>
+    {% if u.kapatma_notu %}<small class="soluk"><em>{{ u.kapatma_notu }}</em></small>{% endif %}
+  </div>
+  {% if koordinator and islem and u.durum == "ACIK" or koordinator and islem and u.durum == "GORULDU" %}
+  <details class="islem-menu"><summary>İşaretle</summary>
+    {% if u.durum == "ACIK" %}
+    <form method="post" action="{% url 'uyari_durumu' ogrenci.ogrenci_no u.pk %}">{% csrf_token %}
+      <input type="hidden" name="durum" value="GORULDU">
+      <input type="text" name="notu" placeholder="Not (isteğe bağlı)">
+      <button class="dugme kucuk-dugme ikincil">Görüldü</button>
+    </form>
+    {% endif %}
+    <form method="post" action="{% url 'uyari_durumu' ogrenci.ogrenci_no u.pk %}">{% csrf_token %}
+      <input type="hidden" name="durum" value="KARARA_BAGLANDI">
+      <input type="text" name="notu" placeholder="Kurul, tarih, sayı (zorunlu)" required>
+      <button class="dugme kucuk-dugme">Karara bağlandı</button>
+    </form>
+  </details>
+  {% endif %}
+</div>

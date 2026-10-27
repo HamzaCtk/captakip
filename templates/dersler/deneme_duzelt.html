@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+{% block baslik %}Kayıt düzelt{% endblock %}
+{% block icerik %}
+<section class="kart orta">
+  <p class="ekmek"><a href="{% url 'ogrenci_karti' ogrenci.ogrenci_no %}">{{ ogrenci.ogrenci_no }} {{ ogrenci.ad_soyad }}</a> / düzeltme</p>
+  <h1>Onaylı kaydı düzelt</h1>
+  <p><strong>{{ deneme.ogrenci_dersi.ders.kod }} {{ deneme.ogrenci_dersi.ders.ad }}</strong><br>
+     <span class="soluk">Şu anki değer: {{ deneme.donem }} · {{ deneme.harf_notu|default:"not yok" }} · {{ deneme.get_durum_display }}</span></p>
+  <div class="bildirim warning">Düzeltme yalnızca koordinatör tarafından, gerekçeyle yapılabilir. Eski ve yeni değer değiştirilemez işlem kaydına yazılır.</div>
+  <form method="post">
+    {% csrf_token %}
+    {% include "_form.html" %}
+    <button class="dugme">Düzeltmeyi kaydet</button>
+    <a href="{% url 'ogrenci_karti' ogrenci.ogrenci_no %}" class="dugme ikincil">Vazgeç</a>
+  </form>
+</section>
+{% endblock %}

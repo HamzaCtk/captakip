@@ -1,0 +1,6 @@
+<div class="alan{% if alan.errors %} hatali{% endif %}">
+  <label for="{{ alan.id_for_label }}">{{ alan.label }}</label>
+  {{ alan }}
+  {% if alan.help_text %}<small class="yardim">{{ alan.help_text }}</small>{% endif %}
+  {% for h in alan.errors %}<small class="hata">{{ h }}</small>{% endfor %}
+</div>

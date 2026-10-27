@@ -1,0 +1,9 @@
+{% extends "base.html" %}
+{% block baslik %}Erişim engellendi{% endblock %}
+{% block icerik %}
+<section class="kart dar">
+  <h1>Erişim engellendi</h1>
+  <p>Bu işlem için yetkiniz yok.</p>
+  <a class="dugme" href="{% url 'anasayfa' %}">Ana sayfaya dön</a>
+</section>
+{% endblock %}

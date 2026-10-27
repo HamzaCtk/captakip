@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+{% block baslik %}Giriş{% endblock %}
+{% block icerik %}
+<div class="giris-baslik">
+  <span class="ust-etiket">Selçuk Üniversitesi · Teknoloji Fakültesi</span>
+  <h1>Çift Anadal ve Yan Dal Takip Sistemi</h1>
+  <p class="soluk">Bilgisayar Mühendisliği Bölümü</p>
+</div>
+<section class="kart dar">
+  <h2>Giriş yap</h2>
+  <p class="soluk">Hesabınız koordinatör tarafından açılır. Öğrenciler kullanıcı adı olarak öğrenci numarasını kullanır.</p>
+  <form method="post">
+    {% csrf_token %}
+    {% include "_form.html" %}
+    <input type="hidden" name="next" value="{{ next }}">
+    <button class="dugme tam">Giriş</button>
+  </form>
+</section>
+{% endblock %}

@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% block baslik %}Hesaplar{% endblock %}
+{% block icerik %}
+<div class="baslik-satiri">
+  <h1>Yönetim hesapları</h1>
+  <a class="dugme vurgu" href="{% url 'hesap_olustur' %}">+ Yeni hesap</a>
+</div>
+<p class="soluk">Öğrenci hesapları öğrenci kartı oluşturulurken açılır. Hesaplar silinmez, pasife alınır.</p>
+<table class="tablo">
+  <thead><tr><th>Kullanıcı adı</th><th>Ad Soyad</th><th>E-posta</th><th>Rol</th><th>Durum</th><th></th></tr></thead>
+  <tbody>
+  {% for h in hesaplar %}
+    <tr{% if not h.is_active %} class="pasif"{% endif %}>
+      <td>{{ h.username }}</td>
+      <td>{{ h.get_full_name }}</td>
+      <td>{{ h.email }}</td>
+      <td>{{ h.get_rol_display }}</td>
+      <td>{% if h.is_active %}<span class="rozet yesil">Aktif</span>{% else %}<span class="rozet gri">Pasif</span>{% endif %}
+          {% if h.sifre_degistirmeli %}<span class="rozet sari">Geçici şifre</span>{% endif %}</td>
+      <td><div class="islemler">
+        {% if h != user %}
+        <form method="post" action="{% url 'hesap_sifre_sifirla' h.pk %}">{% csrf_token %}<button class="baglanti">Şifre sıfırla</button></form>
+        <form method="post" action="{% url 'hesap_aktiflik_degistir' h.pk %}">{% csrf_token %}<button class="baglanti">{% if h.is_active %}Pasife al{% else %}Aktif et{% endif %}</button></form>
+        {% else %}<span class="soluk kucuk">Siz</span>{% endif %}
+      </div></td>
+    </tr>
+  {% endfor %}
+  </tbody>
+</table>
+{% endblock %}

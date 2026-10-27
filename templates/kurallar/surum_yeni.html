@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+{% block baslik %}Yeni kural sürümü{% endblock %}
+{% block icerik %}
+<p class="ekmek"><a href="{% url 'kural_ayarlari' %}">Kural ayarları</a> / Yeni sürüm ({{ tur }})</p>
+<section class="kart orta">
+  <h1>Yeni kural sürümü · {% if tur == "CAP" %}ÇAP{% else %}YDP{% endif %}</h1>
+  <p class="soluk">Değerler {% if onceki %}<strong>{{ onceki.ad }}</strong> sürümünden{% else %}boş olarak{% endif %} getirildi. Yalnızca değişen eşikleri düzeltin. Kaydettiğinizde önceki sürüm yeni başlangıçtan bir gün önce kapanır; silinmez.</p>
+  <form method="post">{% csrf_token %}
+    {% if form.non_field_errors %}<div class="bildirim error">{{ form.non_field_errors|join:" " }}</div>{% endif %}
+    {% for alan in form.temel_alanlar %}{% include "kurallar/_alan.html" %}{% endfor %}
+    <h2 class="ust-bosluk">Eşikler</h2>
+    <p class="soluk kucuk">Ondalıklarda nokta veya virgül kullanılabilir. Harf notları: <code>AA=4.00, BA=3.50, …</code></p>
+    {% for alan in form.parametreler %}{% include "kurallar/_alan.html" %}{% endfor %}
+    <button class="dugme">Sürümü kaydet</button>
+    <a class="dugme ikincil" href="{% url 'kural_ayarlari' %}">Vazgeç</a>
+  </form>
+</section>
+{% endblock %}

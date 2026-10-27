@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% block baslik %}Mesajlar{% endblock %}
+{% block icerik %}
+<div class="baslik-satiri"><h1>Mesajlar</h1></div>
+<p class="soluk">Öğrencilerle yazışmalar. Yeni bir yazışma başlatmak için öğrencinin kartındaki <strong>Mesajlar</strong> sekmesini kullanın.</p>
+
+<table class="tablo">
+  <thead><tr><th>Öğrenci no</th><th>Ad Soyad</th><th>Mesaj</th><th>Okunmamış</th><th>Son mesaj</th></tr></thead>
+  <tbody>
+  {% for o in konusmalar %}
+    <tr{% if o.okunmamis %} class="bekleyen"{% endif %}>
+      <td><a href="{% url 'konusma' o.ogrenci_no %}">{{ o.ogrenci_no }}</a></td>
+      <td>{{ o.ad_soyad }}</td>
+      <td>{{ o.mesaj_sayisi }}</td>
+      <td>{% if o.okunmamis %}<span class="rozet sari">{{ o.okunmamis }} yeni</span>{% else %}<span class="soluk">—</span>{% endif %}</td>
+      <td class="tek-satir">{{ o.son_zaman|date:"d.m.Y H:i" }}</td>
+    </tr>
+  {% empty %}
+    <tr><td colspan="5" class="bos">Henüz yazışma yok.</td></tr>
+  {% endfor %}
+  </tbody>
+</table>
+{% endblock %}

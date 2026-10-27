@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+{% load takip %}
+{% block baslik %}Öğrenciler{% endblock %}
+{% block icerik %}
+<div class="baslik-satiri">
+  <h1>Öğrenciler</h1>
+  {% if user.koordinator_mu %}<div class="dugme-satiri"><a class="dugme ikincil" href="{% url 'aktarim_listesi' %}">CSV ile aktar</a><a class="dugme vurgu" href="{% url 'ogrenci_ekle' %}">+ Öğrenci ekle</a></div>{% endif %}
+</div>
+
+<form method="get" class="filtre">
+  <input type="search" name="q" value="{{ q }}" placeholder="Öğrenci no veya ad ara" aria-label="Ara">
+  <select name="tur" aria-label="Program türü">
+    <option value="">Tüm programlar</option>
+    <option value="CAP" {% if tur == "CAP" %}selected{% endif %}>ÇAP</option>
+    <option value="YDP" {% if tur == "YDP" %}selected{% endif %}>YDP</option>
+  </select>
+  <select name="uyari" aria-label="Uyarı durumu">
+    <option value="">Tüm öğrenciler</option>
+    <option value="var" {% if uyari == "var" %}selected{% endif %}>Açık uyarısı olanlar</option>
+    <option value="kritik" {% if uyari == "kritik" %}selected{% endif %}>Kritik uyarısı olanlar</option>
+  </select>
+  <button class="dugme">Filtrele</button>
+</form>
+
+<table class="tablo">
+  <thead><tr><th>Öğrenci no</th><th>Ad Soyad</th><th>Program</th><th>Ana dal</th><th>Kabul dönemi</th><th>İlerleme (AKTS)</th><th>Uyarı</th><th>Durum</th></tr></thead>
+  <tbody>
+  {% for p in programlar %}
+    {% with o=p.akts_ozeti %}
+    <tr>
+      <td><a href="{% url 'ogrenci_karti' p.ogrenci.ogrenci_no %}">{{ p.ogrenci.ogrenci_no }}</a></td>
+      <td>{{ p.ogrenci.ad_soyad }}</td>
+      <td><span class="rozet {% if p.tur == 'CAP' %}mavi{% else %}sari-marka{% endif %}">{{ p.tur }}</span></td>
+      <td>{{ p.ogrenci.ana_dal_bolumu }}</td>
+      <td>{{ p.kabul_donemi }}</td>
+      <td>
+        {% if o.toplam %}
+        <progress class="ilerleme" title="{{ o.tamamlanan }} / {{ o.toplam }} AKTS" max="{{ o.toplam }}" value="{{ o.tamamlanan }}"></progress>
+        <small class="soluk">{{ o.tamamlanan }} / {{ o.toplam }}</small>
+        {% else %}<small class="soluk">Ders listesi yok</small>{% endif %}
+      </td>
+      <td><a class="tek-satir" href="{% url 'ogrenci_durum' p.ogrenci.ogrenci_no %}">{% if p.kritik_sayisi %}<span class="rozet kirmizi">{{ p.kritik_sayisi }} kritik</span>{% endif %}{% if p.uyari_sayisi %}<span class="rozet sari">{{ p.uyari_sayisi }} uyarı</span>{% endif %}{% if not p.uyari_sayisi and not p.kritik_sayisi %}<span class="soluk">—</span>{% endif %}</a></td>
+      <td><span class="rozet {{ p.get_durum_display|durum_rengi }}">{{ p.get_durum_display }}</span></td>
+    </tr>
+    {% endwith %}
+  {% empty %}
+    <tr><td colspan="8" class="bos">Kayıt bulunamadı.</td></tr>
+  {% endfor %}
+  </tbody>
+</table>
+{% endblock %}

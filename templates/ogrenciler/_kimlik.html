@@ -1,0 +1,21 @@
+{% load takip %}
+{% if user.koordinator_mu or user.bolum_baskani_mi %}<p class="ekmek"><a href="{% url 'ogrenci_listesi' %}">Öğrenciler</a> / {{ ogrenci.ogrenci_no }}</p>{% endif %}
+
+<section class="kart kimlik">
+  <div>
+    <h1>{{ ogrenci.ad_soyad }} <span class="soluk ince">({{ ogrenci.ogrenci_no }})</span></h1>
+    <p class="soluk">
+      {% if program %}{{ program.get_tur_display }} · {% endif %}{{ ogrenci.ana_dal_bolumu }} → Bilgisayar Mühendisliği
+      {% if program %} · Kabul: {{ program.kabul_donemi }}{% endif %} · {{ ogrenci.eposta }}
+    </p>
+  </div>
+  {% if program %}<span class="rozet buyuk {{ program.get_durum_display|durum_rengi }}">{{ program.get_durum_display }}</span>{% endif %}
+</section>
+
+<nav class="sekmeler" aria-label="Öğrenci kartı bölümleri">
+  <a href="{% url 'ogrenci_karti' ogrenci.ogrenci_no %}" class="{% if sekme == 'dersler' %}aktif{% endif %}">Dersler</a>
+  {% acik_uyari_sayisi program as uy %}
+  <a href="{% url 'ogrenci_durum' ogrenci.ogrenci_no %}" class="{% if sekme == 'durum' %}aktif{% endif %}">Durum ve uyarılar{% if uy.sayi %} <span class="sayac seviye-{{ uy.seviye|lower }}" title="Açık uyarı">{{ uy.sayi }}</span>{% endif %}</a>
+  <a href="{% url 'belgeler' ogrenci.ogrenci_no %}" class="{% if sekme == 'belgeler' %}aktif{% endif %}">Belgeler{% if acik_istek %} <span class="sayac" title="Açık belge isteği">{{ acik_istek }}</span>{% endif %}</a>
+  <a href="{% url 'konusma' ogrenci.ogrenci_no %}" class="{% if sekme == 'mesajlar' %}aktif{% endif %}">Mesajlar</a>
+</nav>

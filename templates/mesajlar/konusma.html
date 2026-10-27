@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+{% block baslik %}Mesajlar · {{ ogrenci.ad_soyad }}{% endblock %}
+{% block icerik %}
+{% include "ogrenciler/_kimlik.html" %}
+
+<section class="konusma">
+  <p class="soluk kucuk">
+    {% if user.ogrenci_mi %}Koordinatörle yazışmanız. Mesajlar silinmez ve gönderildikten sonra değiştirilemez.
+    {% elif user.bolum_baskani_mi %}Yazışmayı yalnızca okuyabilirsiniz.
+    {% else %}Bu öğrenciyle yazışma. Mesajlar silinmez ve gönderildikten sonra değiştirilemez.{% endif %}
+  </p>
+
+  <div class="mesaj-akisi" id="akis">
+  {% for m in mesajlar %}
+    <article class="mesaj {% if m.gonderen_id == ogrenci.kullanici_id %}ogrenciden{% else %}koordinatorden{% endif %}{% if m.gonderen_id == user.id %} benim{% endif %}">
+      <header>
+        <strong>{% if m.gonderen_id == user.id %}Siz{% else %}{{ m.gonderen.get_full_name|default:m.gonderen.username }}{% endif %}</strong>
+        <small class="soluk">{{ m.gonderen.get_rol_display }} · {{ m.zaman|date:"d.m.Y H:i" }}</small>
+      </header>
+      <p>{{ m.metin|linebreaksbr }}</p>
+      {% if m.ek_var_mi %}
+        <a class="dosya-baglanti ek" href="{% url 'mesaj_ek_indir' ogrenci.ogrenci_no m.pk %}">📎 {{ m.ek_adi }}</a> <small class="soluk">{{ m.ek_boyut|filesizeformat }}</small>
+      {% endif %}
+      {% if m.gonderen_id == user.id %}
+        <small class="okundu soluk">{% if m.okunma_zamani %}Okundu · {{ m.okunma_zamani|date:"d.m.Y H:i" }}{% else %}Henüz okunmadı{% endif %}</small>
+      {% endif %}
+    </article>
+  {% empty %}
+    <p class="bos">Henüz mesaj yok.{% if form %} İlk mesajı aşağıdan yazabilirsiniz.{% endif %}</p>
+  {% endfor %}
+  </div>
+
+  {% if form %}
+  <form method="post" action="{% url 'mesaj_gonder' ogrenci.ogrenci_no %}" enctype="multipart/form-data" class="kart mesaj-formu">
+    {% csrf_token %}
+    {% include "_form.html" %}
+    <button class="dugme">Gönder</button>
+  </form>
+  {% endif %}
+</section>
+{% endblock %}

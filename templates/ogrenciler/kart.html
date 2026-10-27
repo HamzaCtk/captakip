@@ -1,0 +1,215 @@
+{% extends "base.html" %}
+{% load takip %}
+{% block baslik %}{{ ogrenci.ad_soyad }}{% endblock %}
+{% block icerik %}
+{% include "ogrenciler/_kimlik.html" %}
+
+<div class="ozet-izgara">
+  <div class="ozet-kutu"><strong>{{ ozet.tamamlanan }} / {{ ozet.toplam }}</strong><span>Tamamlanan AKTS</span>
+    <progress class="ilerleme" max="100" value="{{ yuzde }}">%{{ yuzde }}</progress></div>
+  <div class="ozet-kutu"><strong>{{ ozet.kalan }}</strong><span>Kalan AKTS</span></div>
+  <div class="ozet-kutu{% if bekleyen %} uyari{% endif %}"><strong>{{ bekleyen }}</strong><span>Onay bekleyen kayıt</span></div>
+  <div class="ozet-kutu"><strong>{{ dersler|length }}</strong><span>Listedeki ders</span></div>
+</div>
+
+{% if acik_uyarilar %}
+<section class="kart uyari-ozeti">
+  <div class="baslik-satiri"><h2>Açık uyarılar ({{ acik_uyarilar|length }})</h2><a href="{% url 'ogrenci_durum' ogrenci.ogrenci_no %}">Tümü ve ayrıntılar →</a></div>
+  {% for u in acik_uyarilar|slice:":3" %}
+    <p class="uyari-kisa"><span class="rozet {{ u.get_seviye_display|durum_rengi }}">{{ u.get_seviye_display }}</span> {{ u.mesaj }}</p>
+  {% endfor %}
+</section>
+{% endif %}
+
+{% if ogrenci_kendisi and program %}
+<div class="bildirim info">Girdiğiniz dersler ve notlar koordinatör onaylayana kadar <strong>onay bekliyor</strong> durumunda kalır ve AKTS hesabına girmez. Onaylanan kayıtları değiştiremezsiniz; hata varsa koordinatöre yazın.</div>
+{% endif %}
+
+<div class="{% if yonetici %}iki-sutun{% endif %}">
+<section>
+  <h2>Ders listesi</h2>
+  {% if program and program.protokol %}<p class="soluk kucuk">Protokol: {{ program.protokol }}. Yalnızca onaylı kayıtlar hesaplara girer.</p>{% endif %}
+
+  <table class="tablo ders-tablosu">
+    <thead><tr><th>Kod</th><th>Ders</th><th>Yy</th><th>AKTS</th><th>Dönem</th><th>Not</th><th>Durum</th>{% if koordinator or ogrenci_kendisi %}<th>İşlem</th>{% endif %}</tr></thead>
+    <tbody>
+    {% for d in dersler %}
+      <tr class="ders-satiri{% if not d.ders %} slot{% endif %}{% if d.onay_durumu == 'BEKLIYOR' %} bekleyen{% endif %}">
+        <td>{% if d.ders %}{{ d.ders.kod }}{% else %}<span class="soluk">slot</span>{% endif %}</td>
+        <td>{{ d.gorunen_ad }}
+          {% if d.doldurdugu_slot_id %}<span class="soluk kucuk">({{ d.slot_aciklama|default:"seçmeli" }})</span>{% endif %}
+          {% if d.protokol_kalemi.ozel_sart %}<span class="ozel-sart" title="{{ d.protokol_kalemi.ozel_sart }}">özel şart</span>{% endif %}
+          {% if d.onay_durumu != "ONAYLANDI" %}<span class="rozet {{ d.get_onay_durumu_display|durum_rengi }}">{{ d.get_onay_durumu_display }}</span>{% endif %}
+        </td>
+        <td>{{ d.yariyil|default:"—" }}</td>
+        <td>{{ d.akts }}</td>
+        <td></td><td></td>
+        <td><span class="rozet {{ d.gorunen_durum|durum_rengi }}">{{ d.gorunen_durum }}</span></td>
+        {% if koordinator or ogrenci_kendisi %}<td class="islem-hucresi">
+          {% if ogrenci_kendisi %}
+            {% if not d.ders and d.slot_secimi_bekliyor %}
+              <span class="soluk kucuk">Seçiminiz onay bekliyor</span>
+            {% elif not d.ders and d.onay_durumu == "ONAYLANDI" and d.liste_durumu == "AKTIF" %}
+              <form method="post" action="{% url 'ders_sec' ogrenci.ogrenci_no %}" class="satir-ici">{% csrf_token %}
+                <input type="hidden" name="slot" value="{{ d.pk }}">
+                <select name="ders_kodu" required aria-label="Seçmeli ders">
+                  <option value="">Ders seç…</option>
+                  {% for s in secmeliler %}<option value="{{ s.kod }}">{{ s.kod }} {{ s.ad }}{% if s.yariyil %} ({{ s.yariyil }}. yy){% endif %}</option>{% endfor %}
+                </select>
+                <button class="dugme kucuk-dugme">Seç</button>
+              </form>
+            {% elif d.onay_durumu == "BEKLIYOR" and d.olusturan_id == user.id %}
+              <form method="post" action="{% url 'kayit_islemi' ogrenci.ogrenci_no 'ders' d.pk 'geri-cek' %}">{% csrf_token %}<button class="baglanti">Geri çek</button></form>
+            {% endif %}
+          {% elif koordinator %}
+            {% if d.onay_durumu == "BEKLIYOR" %}
+              {% include "dersler/_onay_dugmeleri.html" with tur="ders" kayit=d %}
+            {% elif d.onay_durumu == "ONAYLANDI" %}
+              <details class="islem-menu"><summary>İşlemler</summary>
+                <form method="post" action="{% url 'liste_durumu' ogrenci.ogrenci_no d.pk %}">{% csrf_token %}
+                  <select name="liste_durumu" aria-label="Liste durumu">
+                    <option value="MUAF" {% if d.liste_durumu == "MUAF" %}selected{% endif %}>Muaf say</option>
+                    <option value="CIKARILDI">Listeden çıkar</option>
+                    <option value="AKTIF" {% if d.liste_durumu == "AKTIF" %}selected{% endif %}>Listede tut</option>
+                  </select>
+                  <input type="text" name="gerekce" placeholder="Gerekçe (zorunlu)" required>
+                  <button class="dugme kucuk-dugme">Uygula</button>
+                </form>
+              </details>
+            {% endif %}
+          {% endif %}
+        </td>{% endif %}
+      </tr>
+
+      {% for den in d.denemeler.all %}
+      <tr class="deneme-satiri{% if den.onay_durumu == 'REDDEDILDI' or den.onay_durumu == 'IPTAL' %} gecersiz{% endif %}">
+        <td></td>
+        <td class="soluk">↳ {{ forloop.counter }}. deneme
+          {% if den.onay_durumu != "ONAYLANDI" %}<span class="rozet {{ den.get_onay_durumu_display|durum_rengi }}">{{ den.get_onay_durumu_display }}</span>{% endif %}
+          {% if den.gerekce %}<span class="gerekce" title="{{ den.gerekce }}">gerekçe</span>{% endif %}
+        </td>
+        <td></td><td></td>
+        <td class="tek-satir">{{ den.donem }}</td>
+        <td>{{ den.harf_notu|default:"—" }}
+          {% with bn=den.bekleyen_not %}{% if bn %}<span class="rozet sari" title="Öğrencinin girdiği not, onay bekliyor">{{ bn.harf_notu }} bekliyor</span>{% endif %}{% endwith %}
+        </td>
+        <td><span class="rozet {{ den.get_durum_display|durum_rengi }}">{{ den.get_durum_display }}</span></td>
+        {% if koordinator or ogrenci_kendisi %}<td class="islem-hucresi">
+          {% if ogrenci_kendisi %}
+            {% if den.not_girilebilir_mi and den.donem_id not in transkript_donemleri %}
+              <a class="kucuk" href="{% url 'belgeler' ogrenci.ogrenci_no %}">Not için önce {{ den.donem }} transkriptini yükleyin →</a>
+            {% elif den.not_girilebilir_mi %}
+              <form method="post" action="{% url 'not_gir' ogrenci.ogrenci_no den.pk %}" class="satir-ici">{% csrf_token %}
+                <select name="harf_notu" required aria-label="Harf notu"><option value="">Not…</option>{% for k, v in harf_notlari %}<option value="{{ k }}">{{ k }}</option>{% endfor %}</select>
+                <button class="dugme kucuk-dugme">Notu gönder</button>
+              </form>
+            {% elif den.onay_durumu == "BEKLIYOR" and den.olusturan_id == user.id %}
+              <form method="post" action="{% url 'kayit_islemi' ogrenci.ogrenci_no 'deneme' den.pk 'geri-cek' %}">{% csrf_token %}<button class="baglanti">Geri çek</button></form>
+            {% else %}{% with bn=den.bekleyen_not %}{% if bn %}
+              <form method="post" action="{% url 'kayit_islemi' ogrenci.ogrenci_no 'not' bn.pk 'geri-cek' %}">{% csrf_token %}<button class="baglanti">Notu geri çek</button></form>
+            {% endif %}{% endwith %}{% endif %}
+          {% elif koordinator %}
+            {% if den.onay_durumu == "BEKLIYOR" %}
+              {% include "dersler/_onay_dugmeleri.html" with tur="deneme" kayit=den %}
+            {% else %}{% with bn=den.bekleyen_not %}
+              {% if bn %}{% include "dersler/_onay_dugmeleri.html" with tur="not" kayit=bn etiket="Notu onayla" %}
+              {% elif den.onay_durumu == "ONAYLANDI" %}
+                <details class="islem-menu"><summary>İşlemler</summary>
+                  <a href="{% url 'deneme_duzelt' ogrenci.ogrenci_no den.pk %}">Düzelt</a>
+                  <form method="post" action="{% url 'kayit_islemi' ogrenci.ogrenci_no 'deneme' den.pk 'iptal' %}">{% csrf_token %}
+                    <input type="text" name="gerekce" placeholder="İptal gerekçesi" required>
+                    <button class="dugme kucuk-dugme tehlike">İptal et</button>
+                  </form>
+                </details>
+              {% endif %}
+            {% endwith %}{% endif %}
+          {% endif %}
+        </td>{% endif %}
+      </tr>
+      {% endfor %}
+    {% empty %}
+      <tr><td colspan="8" class="bos">{% if program.tur == "YDP" %}Henüz yan dal dersi seçilmedi.{% else %}Ders listesi boş.{% endif %}</td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+
+  {% if program and program.durum == "AKTIF" and koordinator or program and program.durum == "AKTIF" and ogrenci_kendisi %}
+  <div class="form-izgara">
+    {% if deneme_dersleri %}
+    <section class="kart">
+      <h3>{% if koordinator %}Ders denemesi ekle{% else %}Bu dönem aldığım dersi ekle{% endif %}</h3>
+      <form method="post" action="{% url 'deneme_ekle' ogrenci.ogrenci_no %}">{% csrf_token %}
+        <div class="alan"><label for="dd-ders">Ders</label>
+          <select id="dd-ders" name="ogrenci_dersi" required>{% for d in deneme_dersleri %}<option value="{{ d.pk }}">{{ d.ders.kod }} {{ d.ders.ad }}</option>{% endfor %}</select></div>
+        <div class="alan"><label for="dd-donem">Dönem</label>
+          <select id="dd-donem" name="donem" required>{% for dn in donemler %}<option value="{{ dn.pk }}" {% if dn == guncel_donem %}selected{% endif %}>{{ dn }}</option>{% endfor %}</select></div>
+        {% if koordinator %}
+        <div class="alan"><label for="dd-not">Harf notu (geçmiş dönem için)</label>
+          <select id="dd-not" name="harf_notu"><option value="">— (henüz not yok)</option>{% for k, v in harf_notlari %}<option value="{{ k }}">{{ v }}</option>{% endfor %}</select></div>
+        <label class="onay-kutusu"><input type="checkbox" name="aktarim" value="1"> Geçmiş veri aktarımı (ilk kurulum)</label>
+        {% endif %}
+        <button class="dugme">{% if koordinator %}Ekle (onaylı){% else %}Onaya gönder{% endif %}</button>
+      </form>
+    </section>
+    {% endif %}
+
+    {% if koordinator or program.tur == "YDP" %}
+    <section class="kart">
+      <h3>{% if koordinator %}Listeye ders ekle{% else %}Yan dal ders listeme ekle{% endif %}</h3>
+      <form method="post" action="{% url 'ders_sec' ogrenci.ogrenci_no %}">{% csrf_token %}
+        <div class="alan"><label for="ds-kod">Ders kodu (katalogdan)</label>
+          <input id="ds-kod" name="ders_kodu" list="katalog-listesi" required placeholder="Kod yazın veya seçin" autocomplete="off">
+          <datalist id="katalog-listesi">{% for k in katalog %}<option value="{{ k.kod }}">{{ k.ad }} ({{ k.akts }} AKTS)</option>{% endfor %}</datalist>
+          <small class="yardim">Yalnızca katalogdaki aktif dersler seçilebilir. Katalogda olmayan ders için koordinatöre yazın.</small></div>
+        {% if koordinator %}<div class="alan"><label for="ds-gerekce">Gerekçe</label><input id="ds-gerekce" name="gerekce" required></div>{% endif %}
+        <button class="dugme">{% if koordinator %}Ekle (onaylı){% else %}Onaya gönder{% endif %}</button>
+      </form>
+    </section>
+    {% endif %}
+  </div>
+  {% endif %}
+
+  {% if arsiv %}
+  <details class="kart arsiv">
+    <summary><strong>Listeden çıkarılan, reddedilen ve iptal edilen kalemler</strong> <span class="soluk">({{ arsiv|length }})</span></summary>
+    <table class="tablo">
+      <thead><tr><th>Ders</th><th>AKTS</th><th>Durum</th><th>Gerekçe</th></tr></thead>
+      <tbody>{% for d in arsiv %}
+        <tr class="gecersiz"><td>{% if d.ders %}{{ d.ders.kod }} {{ d.ders.ad }}{% else %}{{ d.slot_aciklama }}{% endif %}</td><td>{{ d.akts }}</td>
+          <td>{% if d.liste_durumu == "CIKARILDI" %}<span class="rozet gri">Listeden çıkarıldı</span>{% else %}<span class="rozet {{ d.get_onay_durumu_display|durum_rengi }}">{{ d.get_onay_durumu_display }}</span>{% endif %}</td>
+          <td class="kucuk">{{ d.gerekce }}</td></tr>
+      {% endfor %}</tbody>
+    </table>
+  </details>
+  {% endif %}
+</section>
+
+{% if yonetici %}
+<aside>
+  <section class="kart">
+    <h2>Koordinatör notları</h2>
+    <p class="soluk kucuk">Öğrenci bu notları göremez.</p>
+    {% if koordinator %}
+    <form method="post" action="{% url 'koordinator_notu_ekle' ogrenci.ogrenci_no %}">
+      {% csrf_token %}
+      {% include "_form.html" with form=not_formu %}
+      <button class="dugme">Not ekle</button>
+    </form>
+    {% endif %}
+    {% for n in notlar %}
+      <div class="not"><p>{{ n.metin|linebreaksbr }}</p><small class="soluk">{{ n.yazan.get_full_name|default:n.yazan.username }} · {{ n.zaman|date:"d.m.Y H:i" }}</small></div>
+    {% empty %}<p class="soluk kucuk">Henüz not yok.</p>{% endfor %}
+  </section>
+
+  <section class="kart">
+    <h2>İşlem geçmişi</h2>
+    <ul class="gecmis">
+    {% for k in gecmis %}
+      <li><strong>{{ k.islem|islem_adi }}</strong>{% if k.nesne_metni and k.nesne_turu != 'Ogrenci' %}<span>{{ k.nesne_metni|truncatechars:70 }}</span>{% endif %}<span class="soluk">{{ k.zaman|date:"d.m.Y H:i" }} · {{ k.yapan.username|default:"sistem" }}</span>{% if k.aciklama %}<em>{{ k.aciklama }}</em>{% endif %}</li>
+    {% empty %}<li class="soluk">Kayıt yok.</li>{% endfor %}
+    </ul>
+  </section>
+</aside>
+{% endif %}
+</div>
+{% endblock %}

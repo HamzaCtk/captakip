@@ -1,0 +1,9 @@
+{% extends "base.html" %}
+{% block baslik %}Sayfa bulunamadı{% endblock %}
+{% block icerik %}
+<section class="kart dar">
+  <h1>Sayfa bulunamadı</h1>
+  <p>Aradığınız sayfa yok ya da taşınmış.</p>
+  <a class="dugme" href="{% url 'anasayfa' %}">Ana sayfaya dön</a>
+</section>
+{% endblock %}

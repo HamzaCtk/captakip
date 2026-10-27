@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+{% block baslik %}Veri aktarımı{% endblock %}
+{% block icerik %}
+<h1>Geçmiş veri aktarımı (CSV)</h1>
+<p class="soluk">Sisteme geçişte eski öğrenci kayıtları, ders/not geçmişi ve ana dal GANO bilgileri CSV dosyasıyla toplu olarak aktarılır. Dosya önce <strong>önizlenir</strong>; veritabanına hiçbir şey yazılmadan her satırın sonucu gösterilir. Uygulama ancak hiç hatalı satır yoksa yapılır ve tek seferde (ya hepsi ya hiçbiri) gerçekleşir.</p>
+
+<div class="{% if user.koordinator_mu %}iki-sutun{% endif %}">
+<section>
+  <h2>Aktarım geçmişi</h2>
+  <table class="tablo">
+    <thead><tr><th>#</th><th>Tür</th><th>Dosya</th><th>Satır</th><th>Durum</th><th>Yükleyen</th></tr></thead>
+    <tbody>
+    {% for i in islemler %}
+      <tr><td><a href="{% url 'aktarim_detay' i.pk %}">#{{ i.pk }}</a></td><td>{{ i.get_tur_display }}</td>
+        <td class="kucuk">{{ i.dosya_adi|truncatechars:34 }}</td>
+        <td class="tek-satir">{{ i.satir_sayisi }}{% if i.hata_sayisi %} <span class="rozet kirmizi">{{ i.hata_sayisi }} hata</span>{% endif %}</td>
+        <td><span class="rozet {% if i.durum == 'UYGULANDI' %}yesil{% elif i.durum == 'VAZGECILDI' %}gri{% else %}sari{% endif %}">{{ i.get_durum_display }}</span></td>
+        <td class="kucuk tek-satir">{{ i.yukleyen.username }}<br><span class="soluk">{{ i.zaman|date:"d.m.Y H:i" }}</span></td></tr>
+    {% empty %}<tr><td colspan="6" class="bos">Henüz aktarım yapılmadı.</td></tr>{% endfor %}
+    </tbody>
+  </table>
+
+  <h2 class="ust-bosluk">Dosya biçimi</h2>
+  <p class="soluk kucuk">İlk satır başlık olmalı. Sütun sırası önemli değildir; aşağıdaki adlardan biri kullanılabilir (büyük/küçük harf ve Türkçe karakter fark etmez). OBİS dökümünde sütun adı farklıysa yalnızca bu eşleme listesine eklenir. Dönem biçimi: <code>2025-2026 Güz</code> veya <code>2025-2026/1</code>. Excel'de "CSV UTF-8" veya "CSV (noktalı virgülle ayrılmış)" olarak kaydedebilirsiniz.</p>
+  {% for r in rehber %}
+  <details class="kart arsiv">
+    <summary><strong>{{ r.ad }}</strong> · <a href="{% url 'aktarim_sablon' r.tur %}">örnek şablonu indir</a></summary>
+    <table class="tablo">
+      <thead><tr><th>Sütun</th><th>Zorunlu</th><th>Kabul edilen diğer adlar</th></tr></thead>
+      <tbody>{% for s in r.sutunlar %}<tr><td><code>{{ s.anahtar }}</code></td><td>{% if s.zorunlu %}Evet{% else %}<span class="soluk">Hayır</span>{% endif %}</td><td class="kucuk soluk">{{ s.diger|join:", " }}</td></tr>{% endfor %}</tbody>
+    </table>
+  </details>
+  {% endfor %}
+</section>
+
+{% if user.koordinator_mu %}
+<aside>
+  <section class="kart">
+    <h2>Yeni aktarım</h2>
+    <p class="soluk kucuk">Sıra önemlidir: önce <strong>öğrenci kayıtları</strong>, sonra not geçmişi ve ana dal bilgisi.</p>
+    <form method="post" enctype="multipart/form-data">{% csrf_token %}
+      {% include "_form.html" %}
+      <button class="dugme">Yükle ve önizle</button>
+    </form>
+  </section>
+  <div class="bildirim warning kucuk">Hocanın şartı gereği yalnızca <strong>sentetik</strong> (uydurma) veri yükleyin.</div>
+</aside>
+{% endif %}
+</div>
+{% endblock %}

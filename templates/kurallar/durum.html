@@ -1,0 +1,101 @@
+{% extends "base.html" %}
+{% load takip %}
+{% block baslik %}{{ ogrenci.ad_soyad }} · Durum{% endblock %}
+{% block icerik %}
+{% include "ogrenciler/_kimlik.html" %}
+
+{% if not program %}
+  <p class="soluk">Program kaydı bulunamadı.</p>
+{% else %}
+<div class="ozet-izgara">
+  <div class="ozet-kutu{% if acik_uyarilar %} uyari{% endif %}"><strong>{{ acik_uyarilar|length }}</strong><span>Açık uyarı</span></div>
+  <div class="ozet-kutu"><strong>{% if son_ana_gano %}{{ son_ana_gano.gano|floatformat:2 }}{% else %}—{% endif %}</strong><span>Ana dal GANO{% if son_ana_gano %} ({{ son_ana_gano.donem }}){% endif %}</span></div>
+  <div class="ozet-kutu"><strong>{% with pg=program_gano|last %}{% if pg %}{{ pg.gano|floatformat:2 }}{% else %}—{% endif %}{% endwith %}</strong><span>{% if program.tur == "CAP" %}ÇAP{% else %}Yan dal{% endif %} not ortalaması</span></div>
+  <div class="ozet-kutu"><strong>{{ kararlar|length }}</strong><span>İşlenmiş kurul kararı</span></div>
+</div>
+
+<div class="bildirim info">Uyarılar yönerge kurallarına göre <strong>otomatik</strong> üretilir ve yalnızca onaylı kayıtlara dayanır. Uyarı bir karar değildir: kayıt silme, dondurma, mezuniyet gibi sonuçlar ancak ilgili kurul kararı sisteme işlendiğinde gerçekleşir.</div>
+
+<div class="{% if yonetici %}iki-sutun{% endif %}">
+<section>
+  <div class="baslik-satiri">
+    <h2>Uyarılar</h2>
+    {% if koordinator and program.durum == "AKTIF" or koordinator and program.durum == "DONDURULDU" %}
+    <form method="post" action="{% url 'simdi_degerlendir' ogrenci.ogrenci_no %}">{% csrf_token %}<button class="dugme ikincil kucuk-dugme">Kuralları şimdi değerlendir</button></form>
+    {% endif %}
+  </div>
+  {% if son_degerlendirme %}<p class="soluk kucuk">Son değerlendirme: {{ son_degerlendirme.zaman|date:"d.m.Y H:i" }} · {{ son_degerlendirme.tetikleyen }} · Kural sürümü: {{ son_degerlendirme.surum.ad }}</p>
+  {% elif not surum %}<p class="soluk kucuk">Bu program türü için yürürlükte kural sürümü yok.</p>{% endif %}
+
+  {% for u in acik_uyarilar %}{% include "kurallar/_uyari.html" with islem=True %}
+  {% empty %}<div class="kart bos-kart"><p class="soluk">Açık uyarı yok. {% if son_degerlendirme %}Tüm kurallar sağlanıyor.{% endif %}</p></div>{% endfor %}
+
+  {% if kapali_uyarilar %}
+  <details class="kart arsiv">
+    <summary><strong>Kapanan uyarılar</strong> <span class="soluk">({{ kapali_uyarilar|length }})</span></summary>
+    {% for u in kapali_uyarilar %}{% include "kurallar/_uyari.html" with islem=False %}{% endfor %}
+  </details>
+  {% endif %}
+
+  {% if program_gano %}
+  <h2 class="ust-bosluk">Dönem sonu not ortalamaları</h2>
+  <table class="tablo">
+    <thead><tr><th>Dönem</th><th>{% if program.tur == "CAP" %}ÇAP{% else %}Yan dal{% endif %} ortalaması (kümülatif)</th></tr></thead>
+    <tbody>{% for g in program_gano %}<tr><td>{{ g.donem }}</td><td>{{ g.gano|floatformat:2 }}</td></tr>{% endfor %}</tbody>
+  </table>
+  <p class="soluk kucuk">Yalnızca onaylı notlar hesaba girer; tekrar alınan derste son not geçerlidir.</p>
+  {% endif %}
+
+  <h2 class="ust-bosluk">Ana dal bilgisi</h2>
+  <p class="soluk kucuk">Sistem ana dal derslerini izlemez. GANO ve ana dal durumu koordinatör tarafından, kaynağı belirtilerek girilir.</p>
+  <table class="tablo">
+    <thead><tr><th>Dönem</th><th>GANO</th><th>Durum</th><th>Kaynak</th>{% if yonetici %}<th>Giren</th>{% endif %}</tr></thead>
+    <tbody>
+    {% for k in ana_dal %}
+      <tr><td>{{ k.donem }}</td><td>{{ k.gano }}</td><td>{{ k.get_ana_dal_durumu_display }}</td><td class="kucuk">{{ k.kaynak_aciklama }}</td>{% if yonetici %}<td class="kucuk">{{ k.giren.username }} · {{ k.zaman|date:"d.m.Y" }}</td>{% endif %}</tr>
+    {% empty %}<tr><td colspan="5" class="bos">Henüz ana dal bilgisi girilmedi.</td></tr>{% endfor %}
+    </tbody>
+  </table>
+
+  <div class="baslik-satiri ust-bosluk">
+    <h2>Kurul kararları</h2>
+    {% if koordinator and program.durum == "AKTIF" or koordinator and program.durum == "DONDURULDU" %}<a class="dugme kucuk-dugme" href="{% url 'karar_isle' ogrenci.ogrenci_no %}">+ Kurul kararı işle</a>{% endif %}
+  </div>
+  <table class="tablo">
+    <thead><tr><th>Tarih / Sayı</th><th>Tür</th><th>Kurul</th><th>Gerekçe</th><th>Dayanak</th></tr></thead>
+    <tbody>
+    {% for k in kararlar %}
+      <tr><td class="tek-satir">{{ k.karar_tarihi|date:"d.m.Y" }}<br><small class="soluk">{{ k.karar_sayisi }}</small></td><td>{{ k.get_tur_display }}</td><td class="kucuk">{{ k.kurul }}</td><td class="kucuk">{{ k.gerekce }}</td>
+        <td class="kucuk">{% if k.dayanak_belge %}<a href="{% url 'belge_indir' ogrenci.ogrenci_no k.dayanak_belge.pk %}">{{ k.dayanak_belge.orijinal_ad|truncatechars:28 }}</a>{% else %}—{% endif %}</td></tr>
+    {% empty %}<tr><td colspan="5" class="bos">İşlenmiş karar yok.</td></tr>{% endfor %}
+    </tbody>
+  </table>
+</section>
+
+{% if yonetici %}
+<aside>
+  {% if ana_dal_formu %}
+  <section class="kart">
+    <h2>Ana dal bilgisi gir</h2>
+    <p class="soluk kucuk">Düzeltme için yeni kayıt girin; eski kayıt geçmişte kalır.</p>
+    <form method="post" action="{% url 'ana_dal_ekle' ogrenci.ogrenci_no %}">{% csrf_token %}
+      {% include "_form.html" with form=ana_dal_formu %}
+      <button class="dugme">Kaydet ve değerlendir</button>
+    </form>
+  </section>
+  {% endif %}
+
+  <section class="kart">
+    <h2>Değerlendirme geçmişi</h2>
+    <p class="soluk kucuk">Her değerlendirme, kullandığı kural sürümü ve o anki verilerle donmuş olarak saklanır.</p>
+    <ul class="gecmis">
+    {% for d in degerlendirmeler %}
+      <li><strong>{{ d.tetikleyen }}</strong><span>{{ d.sonuc|length }} bulgu · {{ d.surum.ad|truncatechars:40 }}</span><span class="soluk">{{ d.zaman|date:"d.m.Y H:i" }} · {{ d.yapan.username|default:"sistem" }}</span></li>
+    {% empty %}<li class="soluk">Henüz değerlendirme yok.</li>{% endfor %}
+    </ul>
+  </section>
+</aside>
+{% endif %}
+</div>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,25 @@
+# Render "Blueprint" dosyası: Render panelinde New → Blueprint ile bu depo
+# seçildiğinde web servisi aşağıdaki ayarlarla kendiliğinden kurulur.
+# Veritabanı Neon'da (ücretsiz, süresiz); bağlantı adresi DATABASE_URL olarak girilir.
+services:
+  - type: web
+    name: captakip
+    runtime: python
+    plan: free
+    region: frankfurt
+    buildCommand: pip install -r requirements.txt && python manage.py collectstatic --noinput
+    # Her açılışta: tablolar güncellenir, veritabanı boşsa sentetik demo verisi kurulur
+    startCommand: python manage.py migrate --noinput && python manage.py demo_verisi --bos-ise && gunicorn config.wsgi --bind 0.0.0.0:$PORT --workers 1 --threads 4 --timeout 120 --access-logfile -
+    healthCheckPath: /saglik/
+    autoDeploy: true
+    envVars:
+      - key: PYTHON_VERSION
+        value: "3.13.5"
+      - key: CAPTAKIP_SECRET_KEY
+        generateValue: true
+      - key: DATABASE_URL
+        sync: false   # Neon bağlantı adresi (panelde girilir, gizli)
+      - key: CAPTAKIP_DEMO_YONETICI_SIFRESI
+        sync: false   # koordinator ve baskan hesaplarının şifresi (panelde girilir, gizli)
+      - key: CAPTAKIP_DEMO_OGRENCI_SIFRESI
+        sync: false   # öğrenci hesaplarının şifresi (panelde girilir, gizli)

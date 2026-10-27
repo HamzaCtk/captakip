@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+{% block baslik %}Ders kataloğu{% endblock %}
+{% block icerik %}
+<div class="baslik-satiri">
+  <h1>Ders kataloğu</h1>
+  {% if user.koordinator_mu %}<a class="dugme vurgu" href="{% url 'ders_ekle' %}">+ Ders ekle</a>{% endif %}
+</div>
+<p class="soluk">Dersler silinmez, pasife alınır. Katalogdaki değişiklik öğrencilerin daha önce geçtiği dersleri etkilemez.</p>
+
+<form method="get" class="filtre">
+  <input type="search" name="q" value="{{ q }}" placeholder="Ders kodu veya adı ara" aria-label="Ara">
+  <button class="dugme">Ara</button>
+</form>
+
+<table class="tablo">
+  <thead><tr><th>Kod</th><th>Ders adı</th><th>Yarıyıl</th><th>AKTS</th><th>Tür</th><th>Durum</th>{% if user.koordinator_mu %}<th></th>{% endif %}</tr></thead>
+  <tbody>
+  {% for d in dersler %}
+    <tr{% if not d.aktif %} class="pasif"{% endif %}>
+      <td>{{ d.kod }}</td><td>{{ d.ad }}</td><td>{{ d.yariyil|default:"—" }}</td><td>{{ d.akts }}</td>
+      <td>{{ d.get_tur_display }}</td>
+      <td>{% if d.aktif %}<span class="rozet yesil">Aktif</span>{% else %}<span class="rozet gri">Pasif</span>{% endif %}</td>
+      {% if user.koordinator_mu %}
+      <td><div class="islemler">
+        <a href="{% url 'ders_duzenle' d.pk %}">Düzenle</a>
+        <form method="post" action="{% url 'ders_aktiflik' d.pk %}" class="satir-ici">{% csrf_token %}
+          <input type="text" name="gerekce" placeholder="Gerekçe" required aria-label="Gerekçe">
+          <button class="baglanti">{% if d.aktif %}Pasife al{% else %}Aktif et{% endif %}</button>
+        </form>
+      </div></td>
+      {% endif %}
+    </tr>
+  {% empty %}<tr><td colspan="7" class="bos">Ders bulunamadı.</td></tr>{% endfor %}
+  </tbody>
+</table>
+
+<h2 class="bosluk-ust">Protokol şablonları</h2>
+{% for p in protokoller %}
+<details class="kart protokol">
+  <summary><strong>{{ p.ad }}</strong> <span class="soluk">· {{ p.kalemler.count }} kalem · {{ p.toplam_akts }} AKTS</span></summary>
+  <table class="tablo">
+    <thead><tr><th>#</th><th>Ders / slot</th><th>Yy</th><th>AKTS</th><th>Özel şart</th></tr></thead>
+    <tbody>
+    {% for k in p.kalemler.all %}
+      <tr><td>{{ k.sira }}</td><td>{% if k.ders %}{{ k.ders.kod }} {{ k.ders.ad }}{% else %}<em>{{ k.slot_aciklama }}</em>{% endif %}</td>
+        <td>{{ k.yariyil|default:"—" }}</td><td>{{ k.akts }}</td><td class="kucuk">{{ k.ozel_sart|default:"" }}</td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</details>
+{% empty %}<p class="soluk">Tanımlı protokol yok.</p>{% endfor %}
+{% endblock %}

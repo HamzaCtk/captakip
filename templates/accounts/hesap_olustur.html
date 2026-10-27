@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+{% block baslik %}Yeni hesap{% endblock %}
+{% block icerik %}
+<section class="kart dar">
+  <h1>Yeni yönetim hesabı</h1>
+  <p class="soluk">Sistem güvenli bir geçici şifre üretir; kullanıcı ilk girişte kendi şifresini belirler.</p>
+  <form method="post">
+    {% csrf_token %}
+    {% include "_form.html" %}
+    <button class="dugme">Oluştur</button>
+    <a href="{% url 'hesap_listesi' %}" class="dugme ikincil">Vazgeç</a>
+  </form>
+</section>
+{% endblock %}

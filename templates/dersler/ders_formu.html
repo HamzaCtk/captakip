@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+{% block baslik %}{% if ders %}{{ ders.kod }} düzenle{% else %}Ders ekle{% endif %}{% endblock %}
+{% block icerik %}
+<section class="kart orta">
+  <h1>{% if ders %}{{ ders.kod }} düzenle{% else %}Kataloğa ders ekle{% endif %}</h1>
+  {% if ders %}<p class="soluk">Değişiklik eski ve yeni değeriyle işlem kaydına düşer. Öğrencilerin listesindeki AKTS değerleri değişmez.</p>{% endif %}
+  <form method="post">
+    {% csrf_token %}
+    {% include "_form.html" %}
+    <button class="dugme">Kaydet</button>
+    <a href="{% url 'katalog' %}" class="dugme ikincil">Vazgeç</a>
+  </form>
+</section>
+{% endblock %}

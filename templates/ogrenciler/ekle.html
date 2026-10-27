@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+{% block baslik %}Öğrenci ekle{% endblock %}
+{% block icerik %}
+<section class="kart orta">
+  <h1>Öğrenci ekle</h1>
+  <p class="soluk">Başvuru değerlendirmesi sistem dışında yapılır. Birim Yönetim Kurulu kararıyla kabul edilen öğrenciyi buradan ekleyin. Öğrenci kartı, kullanıcı hesabı ve program kaydı birlikte oluşur; ÇAP'ta öğrencinin ana dalına ait protokol ders listesine otomatik yüklenir.</p>
+  <form method="post">
+    {% csrf_token %}
+    {% include "_form.html" %}
+    <button class="dugme">Öğrenciyi ekle</button>
+    <a href="{% url 'ogrenci_listesi' %}" class="dugme ikincil">Vazgeç</a>
+  </form>
+</section>
+{% endblock %}

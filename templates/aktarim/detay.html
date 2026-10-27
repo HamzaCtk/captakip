@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+{% block baslik %}Aktarım #{{ islem.pk }}{% endblock %}
+{% block icerik %}
+<p class="ekmek"><a href="{% url 'aktarim_listesi' %}">Veri aktarımı</a> / #{{ islem.pk }}</p>
+<div class="baslik-satiri">
+  <h1>Aktarım #{{ islem.pk }} · {{ islem.get_tur_display }}</h1>
+  <span class="rozet buyuk {% if islem.durum == 'UYGULANDI' %}yesil{% elif islem.durum == 'VAZGECILDI' %}gri{% else %}sari{% endif %}">{{ islem.get_durum_display }}</span>
+</div>
+<p class="soluk kucuk">{{ islem.dosya_adi }} · {{ islem.boyut|filesizeformat }} · {{ islem.kodlama }} · ayırıcı “{{ islem.ayirac }}” · SHA-256 {{ islem.sha256|slice:":16" }}… · {{ islem.yukleyen.username }}, {{ islem.zaman|date:"d.m.Y H:i" }}{% if islem.uygulayan %} · uygulayan {{ islem.uygulayan.username }}, {{ islem.uygulama_zamani|date:"d.m.Y H:i" }}{% endif %}</p>
+
+<div class="ozet-izgara">
+  <div class="ozet-kutu"><strong>{{ islem.satir_sayisi }}</strong><span>Satır</span></div>
+  <div class="ozet-kutu"><strong>{{ tamamlar|length }}</strong><span>{% if islem.durum == 'UYGULANDI' %}Aktarılan{% else %}Sorunsuz{% endif %}</span></div>
+  <div class="ozet-kutu{% if hatalar %} kritik{% endif %}"><strong>{{ hatalar|length }}</strong><span>Hatalı satır</span></div>
+</div>
+
+{% if islem.durum == "ONIZLENDI" %}
+  {% if hatalar %}
+  <div class="bildirim error">Dosyada {{ hatalar|length }} hatalı satır var. Veri bütünlüğü için aktarım ya hep ya hiç yapılır: dosyayı düzeltip yeniden yükleyin.</div>
+  {% else %}
+  <div class="bildirim info">Önizleme tamam: bu sırada veritabanına <strong>hiçbir şey yazılmadı</strong>. Uygularsanız tüm satırlar “Geçmiş veri aktarımı” kaynağıyla kaydedilir, işlem kaydına düşer ve kurallar yeniden değerlendirilir.</div>
+  {% endif %}
+  {% if user.koordinator_mu %}
+  <div class="dugme-satiri">
+    {% if islem.uygulanabilir_mi %}
+    <form method="post" action="{% url 'aktarim_uygula' islem.pk %}">{% csrf_token %}<button class="dugme">Aktarımı uygula ({{ islem.satir_sayisi }} satır)</button></form>
+    {% endif %}
+    <form method="post" action="{% url 'aktarim_vazgec' islem.pk %}">{% csrf_token %}<button class="dugme ikincil">Vazgeç</button></form>
+  </div>
+  {% endif %}
+{% endif %}
+
+{% if hatalar %}
+<h2 class="ust-bosluk">Hatalı satırlar</h2>
+<table class="tablo">
+  <thead><tr><th>Satır</th><th>Veri</th><th>Hata</th></tr></thead>
+  <tbody>{% for s in hatalar %}<tr><td>{{ s.satir }}</td><td class="kucuk soluk">{{ s.veri|default:"" }}</td><td class="kucuk">{{ s.mesaj }}</td></tr>{% endfor %}</tbody>
+</table>
+{% endif %}
+
+{% if tamamlar %}
+<details class="kart arsiv"{% if not hatalar %} open{% endif %}>
+  <summary><strong>{% if islem.durum == 'UYGULANDI' %}Aktarılan satırlar{% else %}Sorunsuz satırlar{% endif %}</strong> <span class="soluk">({{ tamamlar|length }})</span></summary>
+  <table class="tablo">
+    <thead><tr><th>Satır</th><th>Sonuç</th></tr></thead>
+    <tbody>{% for s in tamamlar %}<tr><td>{{ s.satir }}</td><td class="kucuk">{{ s.mesaj }}</td></tr>{% endfor %}</tbody>
+  </table>
+</details>
+{% endif %}
+{% endblock %}

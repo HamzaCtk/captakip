@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+{% block baslik %}Bildirimler{% endblock %}
+{% block icerik %}
+<div class="baslik-satiri">
+  <h1>Bildirimler</h1>
+  {% if okunmamis_bildirim %}
+  <form method="post" action="{% url 'bildirim_tumunu_okundu' %}">{% csrf_token %}<button class="dugme ikincil">Tümünü okundu yap</button></form>
+  {% endif %}
+</div>
+
+<ul class="bildirim-listesi">
+{% for b in bildirimler %}
+  <li class="{% if not b.okundu_mu %}okunmamis{% endif %} tur-{{ b.tur|lower }}">
+    <a href="{% url 'bildirim_ac' b.pk %}">
+      <span class="rozet {% if b.tur == 'RED' or b.tur == 'IPTAL' %}kirmizi{% elif b.tur == 'ONAY' %}yesil{% elif b.tur == 'UYARI' or b.tur == 'BELGE_ISTEGI' %}sari{% else %}mavi{% endif %}">{{ b.get_tur_display }}</span>
+      <span class="metin">{{ b.metin }}</span>
+      <small class="soluk tek-satir">{{ b.zaman|date:"d.m.Y H:i" }}</small>
+    </a>
+  </li>
+{% empty %}
+  <li class="bos">Bildiriminiz yok.</li>
+{% endfor %}
+</ul>
+{% endblock %}

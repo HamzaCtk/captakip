@@ -1,0 +1,15 @@
+{# Koordinatörün onayla / reddet düğmeleri. Parametreler: tur, kayit, (etiket), (geri) #}
+{% firstof kayit_ogrenci_no ogrenci.ogrenci_no as ogr_no %}
+<div class="onay-dugmeleri">
+  <form method="post" action="{% url 'kayit_islemi' ogr_no tur kayit.pk 'onayla' %}">{% csrf_token %}
+    {% if geri %}<input type="hidden" name="geri" value="{{ geri }}">{% endif %}
+    <button class="dugme kucuk-dugme onayla">{{ etiket|default:"Onayla" }}</button>
+  </form>
+  <details class="islem-menu"><summary>Reddet</summary>
+    <form method="post" action="{% url 'kayit_islemi' ogr_no tur kayit.pk 'reddet' %}">{% csrf_token %}
+      {% if geri %}<input type="hidden" name="geri" value="{{ geri }}">{% endif %}
+      <input type="text" name="gerekce" placeholder="Red gerekçesi (zorunlu)" required>
+      <button class="dugme kucuk-dugme tehlike">Reddet</button>
+    </form>
+  </details>
+</div>

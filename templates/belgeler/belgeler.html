@@ -1,0 +1,98 @@
+{% extends "base.html" %}
+{% load takip %}
+{% block baslik %}Belgeler · {{ ogrenci.ad_soyad }}{% endblock %}
+{% block icerik %}
+{% include "ogrenciler/_kimlik.html" %}
+
+{% if transkript_eksik %}
+<div class="bildirim warning">
+  <strong>Eksik transkript:</strong>
+  {% for d in transkript_eksik %}{{ d }}{% if not forloop.last %}, {% endif %}{% endfor %}
+  dönemine ait ÇAP/YDP not belgesi yüklenmedi. Bu belge yüklenmeden dönem sonu notları onaya gönderilemez.
+</div>
+{% endif %}
+
+<div class="{% if yukleyebilir %}iki-sutun{% endif %}">
+<section>
+  {% if istekler %}
+  <h2>Ek belge istekleri</h2>
+  <div class="istek-listesi">
+  {% for i in istekler %}
+    <div class="kart istek{% if i.acik_mi %} acik{% endif %}">
+      <div class="istek-ust">
+        <strong>{{ i.get_tur_display }}</strong>
+        <span class="rozet {% if i.durum == 'ONAYLANDI' %}yesil{% elif i.durum == 'REDDEDILDI' %}kirmizi{% elif i.durum == 'YUKLENDI' %}mavi{% else %}sari{% endif %}">{{ i.get_durum_display }}</span>
+      </div>
+      <p>{{ i.aciklama|linebreaksbr }}</p>
+      <small class="soluk">İsteyen: {{ i.isteyen.get_full_name|default:i.isteyen.username }} · {{ i.zaman|date:"d.m.Y" }}{% if i.son_tarih %} · Son tarih: <strong>{{ i.son_tarih|date:"d.m.Y" }}</strong>{% endif %}</small>
+      {% if i.acik_mi and user.ogrenci_mi %}
+      <form method="post" action="{% url 'belge_yukle' ogrenci.ogrenci_no %}" enctype="multipart/form-data" class="satir-ici istek-yukle">{% csrf_token %}
+        <input type="hidden" name="istek" value="{{ i.pk }}">
+        <input type="file" name="dosya" accept=".pdf,.png,.jpg,.jpeg" required aria-label="Dosya">
+        <button class="dugme kucuk-dugme">Yükle</button>
+      </form>
+      {% endif %}
+    </div>
+  {% endfor %}
+  </div>
+  {% endif %}
+
+  <h2 class="{% if istekler %}bosluk-ust{% endif %}">Belge arşivi</h2>
+  <p class="soluk kucuk">Belgeler silinmez. Yenilenen veya reddedilen belgenin eski sürümü arşivde kalır. Dosyalar yalnızca yetkili kullanıcılar tarafından indirilebilir.</p>
+  <table class="tablo">
+    <thead><tr><th>Tür</th><th>Dönem</th><th>Dosya</th><th>Sürüm</th><th>Yükleyen</th><th>Durum</th>{% if yukleyebilir %}<th>İşlem</th>{% endif %}</tr></thead>
+    <tbody>
+    {% for b in tum %}
+      <tr class="{% if not b.guncel_mi %}gecersiz{% endif %}{% if b.onay_durumu == 'BEKLIYOR' %} bekleyen{% endif %}">
+        <td>{{ b.get_tur_display }}{% if b.aciklama %}<br><small class="soluk">{{ b.aciklama }}</small>{% endif %}</td>
+        <td class="tek-satir">{{ b.donem|default:"—" }}</td>
+        <td><a href="{% url 'belge_indir' ogrenci.ogrenci_no b.pk %}" class="dosya-baglanti">{{ b.orijinal_ad }}</a><br><small class="soluk">{{ b.boyut|filesizeformat }}</small></td>
+        <td class="tek-satir">{{ b.surum_no }}. sürüm{% if not b.guncel_mi %}<br><small class="soluk">eski</small>{% endif %}</td>
+        <td class="tek-satir"><small>{{ b.olusturan.get_full_name|default:b.olusturan.username }}<br>{{ b.olusturma_zamani|date:"d.m.Y H:i" }}</small></td>
+        <td><span class="rozet {{ b.get_onay_durumu_display|durum_rengi }}">{{ b.get_onay_durumu_display }}</span>
+          {% if b.gerekce %}<br><small class="gerekce-metin">{{ b.gerekce }}</small>{% endif %}</td>
+        {% if yukleyebilir %}<td class="islem-hucresi">
+          {% if koordinator and b.onay_durumu == "BEKLIYOR" %}
+            {% include "dersler/_onay_dugmeleri.html" with tur="belge" kayit=b %}
+          {% elif b.guncel_mi %}
+            <details class="islem-menu"><summary>Yeni sürüm yükle</summary>
+              <form method="post" action="{% url 'belge_yukle' ogrenci.ogrenci_no %}" enctype="multipart/form-data">{% csrf_token %}
+                <input type="hidden" name="onceki" value="{{ b.pk }}">
+                <input type="file" name="dosya" accept=".pdf,.png,.jpg,.jpeg" required aria-label="Dosya">
+                <button class="dugme kucuk-dugme">Yükle</button>
+              </form>
+            </details>
+          {% endif %}
+        </td>{% endif %}
+      </tr>
+    {% empty %}
+      <tr><td colspan="7" class="bos">Henüz belge yüklenmedi.</td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</section>
+
+{% if yukleyebilir %}
+<aside>
+  <section class="kart">
+    <h2>Belge yükle</h2>
+    <form method="post" action="{% url 'belge_yukle' ogrenci.ogrenci_no %}" enctype="multipart/form-data">
+      {% csrf_token %}
+      {% include "_form.html" %}
+      <button class="dugme">{% if user.ogrenci_mi %}Yükle ve onaya gönder{% else %}Yükle (onaylı){% endif %}</button>
+    </form>
+  </section>
+  {% if koordinator %}
+  <section class="kart">
+    <h2>Öğrenciden belge iste</h2>
+    <form method="post" action="{% url 'belge_istek' ogrenci.ogrenci_no %}">
+      {% csrf_token %}
+      {% include "_form.html" with form=istek_formu %}
+      <button class="dugme vurgu">İsteği gönder</button>
+    </form>
+  </section>
+  {% endif %}
+</aside>
+{% endif %}
+</div>
+{% endblock %}

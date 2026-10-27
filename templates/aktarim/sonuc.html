@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+{% block baslik %}Aktarım uygulandı{% endblock %}
+{% block icerik %}
+<p class="ekmek"><a href="{% url 'aktarim_listesi' %}">Veri aktarımı</a> / #{{ islem.pk }}</p>
+<h1>Aktarım #{{ islem.pk }} uygulandı</h1>
+{% if sifreler %}
+<div class="bildirim warning"><strong>Geçici şifreler yalnızca şimdi gösteriliyor</strong> ve hiçbir yerde saklanmıyor. Öğrencilere güvenli bir kanaldan iletin; ilk girişte şifrelerini değiştirmeleri zorunludur.</div>
+<table class="tablo">
+  <thead><tr><th>Kullanıcı adı</th><th>Ad Soyad</th><th>Geçici şifre</th></tr></thead>
+  <tbody>{% for s in sifreler %}<tr><td><a href="{% url 'ogrenci_karti' s.ogrenci_no %}">{{ s.ogrenci_no }}</a></td><td>{{ s.ad_soyad }}</td><td><code>{{ s.sifre }}</code></td></tr>{% endfor %}</tbody>
+</table>
+{% endif %}
+<p class="ust-bosluk"><a class="dugme" href="{% url 'aktarim_detay' islem.pk %}">Aktarım ayrıntıları</a> <a class="dugme ikincil" href="{% url 'ogrenci_listesi' %}">Öğrenci listesi</a></p>
+{% endblock %}

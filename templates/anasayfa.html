@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+{% load takip %}
+{% block baslik %}Ana sayfa{% endblock %}
+{% block icerik %}
+<h1>Hoş geldiniz, {{ user.first_name|default:user.username }}</h1>
+
+{% if user.ogrenci_mi %}
+  <p class="soluk">Hesabınıza bağlı bir öğrenci kaydı bulunamadı. Lütfen koordinatörle iletişime geçin.</p>
+{% else %}
+  <p class="soluk">{% if user.bolum_baskani_mi %}Bölüm başkanı görünümü — kayıtları ve işlem geçmişini görebilir, değişiklik yapamazsınız.{% else %}Koordinatör paneli.{% endif %}</p>
+
+  <div class="ozet-izgara">
+    <div class="ozet-kutu"><strong>{{ istatistik.cap }}</strong><span>Aktif ÇAP öğrencisi</span></div>
+    <div class="ozet-kutu"><strong>{{ istatistik.ydp }}</strong><span>Aktif YDP öğrencisi</span></div>
+    <a class="ozet-kutu baglanti-kutu{% if istatistik.bekleyen %} uyari{% endif %}" href="{% url 'onay_kuyrugu' %}"><strong>{{ istatistik.bekleyen }}</strong><span>Onay bekleyen kayıt →</span></a>
+    <a class="ozet-kutu baglanti-kutu{% if istatistik.kritik %} kritik{% endif %}" href="{% url 'ogrenci_listesi' %}?uyari=var"><strong>{{ istatistik.kritik }} / {{ istatistik.uyari }}</strong><span>Kritik / uyarı →</span></a>
+  </div>
+
+  {% if uyarilar %}
+  <section class="ust-bosluk">
+    <div class="baslik-satiri"><h2>Açık uyarılar</h2>{% if uyari_toplam > 10 %}<a href="{% url 'ogrenci_listesi' %}?uyari=var">Tümü ({{ uyari_toplam }}) →</a>{% endif %}</div>
+    <table class="tablo">
+      <thead><tr><th>Seviye</th><th>Öğrenci</th><th>Uyarı</th><th>Dayanak</th><th>Tarih</th></tr></thead>
+      <tbody>{% for u in uyarilar %}
+        <tr><td><span class="rozet {{ u.get_seviye_display|durum_rengi }}">{{ u.get_seviye_display }}</span></td>
+          <td class="tek-satir"><a href="{% url 'ogrenci_durum' u.program_kaydi.ogrenci.ogrenci_no %}">{{ u.program_kaydi.ogrenci.ogrenci_no }}</a><br><small class="soluk">{{ u.program_kaydi.ogrenci.ad_soyad }} · {{ u.program_kaydi.tur }}</small></td>
+          <td class="kucuk">{{ u.mesaj }}</td><td class="kucuk soluk">{{ u.dayanak }}</td><td class="kucuk tek-satir">{{ u.zaman|date:"d.m.Y" }}</td></tr>
+      {% endfor %}</tbody>
+    </table>
+  </section>
+  {% endif %}
+
+  <div class="izgara">
+    <a class="kart baglanti-kart" href="{% url 'ogrenci_listesi' %}"><h2>Öğrenciler</h2><p>ÇAP ve YDP öğrencilerinin kartları, dersleri ve durumları.</p></a>
+    <a class="kart baglanti-kart" href="{% url 'katalog' %}"><h2>Ders kataloğu</h2><p>Bölüm dersleri ve protokol şablonları.</p></a>
+    <a class="kart baglanti-kart" href="{% url 'kural_ayarlari' %}"><h2>Kural ayarları</h2><p>Yönerge eşikleri ve sürümleri.</p></a>
+    <a class="kart baglanti-kart" href="{% url 'aktarim_listesi' %}"><h2>Veri aktarımı</h2><p>Geçmiş kayıtları CSV dosyasıyla toplu aktarın.</p></a>
+    {% if user.koordinator_mu %}
+    <a class="kart baglanti-kart" href="{% url 'ogrenci_ekle' %}"><h2>Öğrenci ekle</h2><p>Kurul kararıyla kabul edilen öğrenciyi sisteme ekleyin.</p></a>
+    <a class="kart baglanti-kart" href="{% url 'hesap_listesi' %}"><h2>Hesaplar</h2><p>Koordinatör ve bölüm başkanı hesapları.</p></a>
+    {% endif %}
+  </div>
+{% endif %}
+{% endblock %}
